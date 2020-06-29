@@ -225,7 +225,6 @@ impl<S: Store + Send + Sync> Provider for WasccProvider<S> {
                 for c_port in container_vec.iter() {
                     let container_port = c_port.container_port;
                     let host_port = c_port.host_port;
-                    //self.port_set.lock().unwrap().insert(30000);
                     if c_port.host_port.is_none() {
                         println!("host port is not specified");
                         if container_port >= 0 && container_port <= 65536 {
