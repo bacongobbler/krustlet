@@ -18,6 +18,7 @@ impl State<PodState> for VolumeMount {
             &pod_state.shared.volume_path,
             &pod,
             &pod_state.shared.client,
+            &pod_state.shared.plugin_registrar,
         )
         .await
         {

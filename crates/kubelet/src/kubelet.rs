@@ -33,6 +33,7 @@ pub struct Kubelet<P> {
     provider: Arc<P>,
     kube_config: kube::Config,
     config: Box<Config>,
+    plugin_registrar: Arc<PluginRegistry>,
 }
 
 impl<P: 'static + Provider + Sync + Send> Kubelet<P> {
@@ -42,6 +43,7 @@ impl<P: 'static + Provider + Sync + Send> Kubelet<P> {
         provider: P,
         kube_config: kube::Config,
         config: Config,
+        plugin_registrar: Arc<PluginRegistry>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             provider: Arc::new(provider),
@@ -49,6 +51,7 @@ impl<P: 'static + Provider + Sync + Send> Kubelet<P> {
             // The config object can get a little bit for some reason, so put it
             // on the heap
             config: Box::new(config),
+            plugin_registrar: plugin_registrar,
         })
     }
 
@@ -66,9 +69,7 @@ impl<P: 'static + Provider + Sync + Send> Kubelet<P> {
         let signal = Arc::new(AtomicBool::new(false));
         let signal_task = start_signal_task(Arc::clone(&signal)).fuse().boxed();
 
-        let plugin_registrar = PluginRegistry::new(&self.config.plugins_dir);
-
-        let registrar = plugin_registrar.run().fuse().boxed();
+        let registrar = self.plugin_registrar.run().fuse().boxed();
 
         // Start the webserver
         let webserver = start_webserver(self.provider.clone(), &self.config.server_config)
@@ -149,6 +150,7 @@ impl<P> Clone for Kubelet<P> {
             provider: self.provider.clone(),
             kube_config: self.kube_config.clone(),
             config: self.config.clone(),
+            plugin_registrar: self.plugin_registrar.clone(),
         }
     }
 }

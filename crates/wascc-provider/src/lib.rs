@@ -36,6 +36,7 @@ use kubelet::backoff::ExponentialBackoffStrategy;
 use kubelet::container::Handle as ContainerHandle;
 use kubelet::handle::StopHandler;
 use kubelet::node::Builder;
+use kubelet::plugin_watcher::PluginRegistry;
 use kubelet::pod::{Handle, Pod, PodKey};
 use kubelet::provider::Provider;
 use kubelet::provider::ProviderError;
@@ -148,6 +149,7 @@ struct SharedPodState {
     log_path: PathBuf,
     host: Arc<Mutex<Host>>,
     port_map: Arc<TokioMutex<BTreeMap<u16, PodKey>>>,
+    plugin_registrar: Arc<PluginRegistry>,
 }
 
 impl WasccProvider {
@@ -157,6 +159,7 @@ impl WasccProvider {
         store: Arc<dyn Store + Sync + Send>,
         config: &kubelet::config::Config,
         kubeconfig: kube::Config,
+        plugin_registrar: Arc<PluginRegistry>,
     ) -> anyhow::Result<Self> {
         let client = kube::Client::new(kubeconfig);
         let host = Arc::new(Mutex::new(Host::new()));
@@ -212,6 +215,7 @@ impl WasccProvider {
                 log_path,
                 host,
                 port_map,
+                plugin_registrar,
             },
         })
     }

@@ -30,7 +30,7 @@
 //!     type InitialState = Stub;
 //!     type TerminatedState = Stub;
 //!     type PodState = PodState;
-//!    
+//!
 //!     async fn initialize_pod_state(&self, _pod: &Pod) -> anyhow::Result<Self::PodState> {
 //!         Ok(PodState)
 //!     }
@@ -75,7 +75,7 @@ pub(crate) mod grpc_sock;
 #[cfg(target_family = "windows")]
 #[allow(dead_code)]
 pub(crate) mod mio_uds_windows;
-pub(crate) mod plugin_watcher;
+pub mod plugin_watcher;
 
 pub mod backoff;
 pub mod config;

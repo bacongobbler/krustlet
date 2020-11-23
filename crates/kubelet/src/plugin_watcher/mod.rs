@@ -1,3 +1,6 @@
+//! A storage plugin registry system that implements most the same functionality as the [plugin
+/// manager](https://github.com/kubernetes/kubernetes/tree/fd74333a971e2048b5fb2b692a9e043483d63fba/pkg/kubelet/pluginmanager)
+/// in kubelet
 use crate::fs_watch::FileSystemWatcher;
 use crate::grpc_sock;
 use crate::plugin_registration_api::v1::{

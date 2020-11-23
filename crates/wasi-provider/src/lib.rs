@@ -41,6 +41,7 @@ use async_trait::async_trait;
 use kubelet::backoff::ExponentialBackoffStrategy;
 use kubelet::node::Builder;
 use kubelet::pod::{Handle, Pod, PodKey};
+use kubelet::plugin_watcher::PluginRegistry;
 use kubelet::provider::{Provider, ProviderError};
 use kubelet::store::Store;
 use kubelet::volume::Ref;
@@ -71,6 +72,7 @@ struct SharedPodState {
     log_path: PathBuf,
     kubeconfig: kube::Config,
     volume_path: PathBuf,
+    plugin_registrar: Arc<PluginRegistry>,
 }
 
 impl WasiProvider {
@@ -79,6 +81,7 @@ impl WasiProvider {
         store: Arc<dyn Store + Sync + Send>,
         config: &kubelet::config::Config,
         kubeconfig: kube::Config,
+        plugin_registrar: Arc<PluginRegistry>,
     ) -> anyhow::Result<Self> {
         let log_path = config.data_dir.join(LOG_DIR_NAME);
         let volume_path = config.data_dir.join(VOLUME_DIR);
@@ -91,6 +94,7 @@ impl WasiProvider {
                 log_path,
                 volume_path,
                 kubeconfig,
+                plugin_registrar,
             },
         })
     }

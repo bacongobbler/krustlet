@@ -10,11 +10,13 @@ use k8s_openapi::ByteString;
 use kube::api::Api;
 use log::{debug, error};
 
+use crate::plugin_watcher::PluginRegistry;
 use crate::pod::Pod;
 
 #[derive(Debug)]
 enum Type {
     ConfigMap,
+    CSIVolume,
     Secret,
     HostPath,
 }
@@ -36,6 +38,7 @@ impl Ref {
         volume_dir: &PathBuf,
         pod: &Pod,
         client: &kube::Client,
+        plugin_registrar: &PluginRegistry,
     ) -> anyhow::Result<HashMap<String, Self>> {
         let base_path = volume_dir.join(pod_dir_name(pod));
         tokio::fs::create_dir_all(&base_path).await?;
@@ -44,7 +47,7 @@ impl Ref {
                 let mut host_path = base_path.clone();
                 host_path.push(&v.name);
                 async move {
-                    let volume_type = configure(v, pod.namespace(), client, &host_path).await?;
+                    let volume_type = configure(v, pod.namespace(), client, &host_path, plugin_registrar).await?;
                     Ok((
                         v.name.to_owned(),
                         // Every other volume type should mount to the given host_path except for a
@@ -111,6 +114,7 @@ async fn configure(
     namespace: &str,
     client: &kube::Client,
     path: &PathBuf,
+    plugin_registrar: &PluginRegistry,
 ) -> anyhow::Result<Type> {
     if let Some(cm) = &vol.config_map {
         populate_from_config_map(
@@ -135,9 +139,18 @@ async fn configure(
         )
         .await
     } else if let Some(hostpath) = &vol.host_path {
-        // Check the the directory exists on the host
+        // Check that the directory exists on the host
         tokio::fs::metadata(&hostpath.path).await?;
         Ok(Type::HostPath)
+    } else if let Some(csi) = &vol.csi {
+        // Check that the CSI driver is running and available on the host
+        match plugin_registrar.get_endpoint(&csi.driver).await {
+            Some(endpoint) => {
+                tokio::fs::metadata(endpoint).await?;
+                Ok(Type::CSIVolume)
+            },
+            None => Err(anyhow::anyhow!(format!("CSI driver '{}' is not registered", &csi.driver))),
+        }
     } else {
         Err(anyhow::anyhow!(
             "Unsupported volume type. Currently supported types: ConfigMap, Secret, and HostPath"

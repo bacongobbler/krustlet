@@ -16,7 +16,7 @@ impl State<PodState> for VolumeMount {
     async fn next(self: Box<Self>, pod_state: &mut PodState, pod: &Pod) -> Transition<PodState> {
         let client = kube::Client::new(pod_state.shared.kubeconfig.clone());
         pod_state.run_context.volumes =
-            match Ref::volumes_from_pod(&pod_state.shared.volume_path, &pod, &client).await {
+            match Ref::volumes_from_pod(&pod_state.shared.volume_path, &pod, &client, &pod_state.shared.plugin_registrar).await {
                 Ok(volumes) => volumes,
                 Err(e) => transition_to_error!(self, e),
             };
